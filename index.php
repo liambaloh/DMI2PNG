@@ -4,88 +4,88 @@
 
 	$dmiFiles = [];
 	$dir = new DirectoryIterator("in");
+
 	foreach ($dir as $fileinfo) {
 		if (!$fileinfo->isDot()) {
-			$fileName = $fileinfo->getFilename();
-			$ext = pathinfo($fileName, PATHINFO_EXTENSION);
+			$fileName	= $fileinfo->getFilename();
+			$ext		= pathinfo($fileName, PATHINFO_EXTENSION);
 			if ($ext == "dmi") {
-				$dmiFiles[] = $fileName;
+				$dmiFiles[]	= $fileName;
 			}
 		}
 	}
-
-	$verbose = false;
 
 	foreach ($dmiFiles as $i => $inFile) {
 
 		print "$inFile\n";
 
-		$metadata = PNGMetadataExtractor::getMetadata("in/".$inFile);
-		$dmi = $metadata["text"]["ImageDescription"]["x-default"];
-		$metadata = explode("\n", trim($dmi));
-
-		$width = 32;
-		$height = 32;
-		$version = 0;
-
-		$state = "";
-		$dirs = "";
-		$frames = "";
-		$delay = "";
-		$loop = "";
-		$hotspot = "";
-		$rewind = "";
-		$movement = "";
-		$first = true;
-
-		$sprites = [];
+		$metadata	= PNGMetadataExtractor::getMetadata("in/".$inFile);
+		$dmi		= $metadata["text"]["ImageDescription"]["x-default"];
+		$metadata	= explode("\n", trim($dmi));
+		
+		$width		= 32;
+		$height		= 32;
+		$version	= 0;
+		
+		$state		= "";
+		$dirs		= "";
+		$frames		= "";
+		$delay		= "";
+		$loop		= "";
+		$hotspot	= "";
+		$rewind		= "";
+		$movement	= "";
+		$first		= true;
+		
+		$sprites	= [];
 
 		foreach ($metadata as $i => $line) {
-			$line = trim($line);
-			$dataPair = explode("=", $line);
+			$line		= trim($line);
+			$dataPair	= explode("=", $line);
+			
+			$key		= trim($dataPair[0]);
+			$value		= trim($dataPair[1] ?? null);
+			print "$key => $value\n";
+			
 			if (count($dataPair) != 2) {
 				continue;
 			}
-			//print "<br>$key - $value";
-			
-			$key = trim($dataPair[0]);
-			$value = trim($dataPair[1]);
-			
+
 			if ($key == "version") {
-				$version = intval($value);
+				$version	= intval($value);
 				continue;
 			}
 			if ($key == "width") {
-				$width = intval($value);
+				$width		= intval($value);
 				continue;
 			}
 			if ($key == "height") {
-				$height = intval($value);
+				$height		= intval($value);
 				continue;
 			}
 			if ($key == "state") {
 				if ($first) {
-					$first = false;
+					$first	= false;
 				}else{
 					$sprites[] = Array(
-						"state" => $state, 
-						"dirs" => $dirs, 
-						"frames" => $frames, 
-						"delay" => $delay, 
-						"loop" => $loop, 
-						"hotspot" => $hotspot, 
-						"movement" => $movement, 
-						"rewind" => $rewind
+						"state"		=> $state, 
+						"dirs"		=> $dirs, 
+						"frames"	=> $frames, 
+						"delay"		=> $delay, 
+						"loop"		=> $loop, 
+						"hotspot"	=> $hotspot, 
+						"movement"	=> $movement, 
+						"rewind"	=> $rewind
 					);
 				}
-				$state = "";
-				$dirs = "";
-				$frames = "";
-				$delay = "";
-				$loop = "";
-				$rewind = "";
-				$hotspot = "";
-				$movement = "";
+				$state		= "";
+				$dirs		= "";
+				$frames		= "";
+				$delay		= "";
+				$loop		= "";
+				$rewind		= "";
+				$hotspot	= "";
+				$movement	= "";
 				if (startsWith($value, '"')) {
 					$value = substr($value, 1);
 				}
@@ -128,33 +128,30 @@
 
 		if (!$first) {
 			$sprites[] = Array(
-				"state" => $state, 
-				"dirs" => $dirs, 
-				"frames" => $frames, 
-				"delay" => $delay, 
-				"loop" => $loop, 
-				"hotspot" => $hotspot, 
-				"movement" => $movement, 
-				"rewind" => $rewind
+				"state"		=> $state, 
+				"dirs"		=> $dirs, 
+				"frames"	=> $frames, 
+				"delay"		=> $delay, 
+				"loop"		=> $loop, 
+				"hotspot"	=> $hotspot, 
+				"movement"	=> $movement, 
+				"rewind"	=> $rewind
 			);
 		}
 
 		//Load image
-		$image = imagecreatefrompng("in/".$inFile);
+		$image			= imagecreatefrompng("in/".$inFile);
 		imagesavealpha($image, true);
-		$trans_colour = imagecolorallocatealpha($image, 0, 0, 0, 127);
+		$trans_colour	= imagecolorallocatealpha($image, 0, 0, 0, 127);
 		imagefill($image, 0, 0, $trans_colour);
-		$imageWidth = imagesx($image);
-		$imageHeight = imagesy($image);
-		$spritesX = $imageWidth / $width;
-		$spritesY = $imageHeight / $height;
-
-		$folderName = str_replace(".dmi", "", $inFile);
-		$folderName = preg_replace('/[^A-Za-z0-9 _ .-]/', '', $folderName);
-		$folderName = "out/".$folderName;
-		if ($verbose) {
-			print "<h2>$folderName</h2>";
-		}
+		$imageWidth		= imagesx($image);
+		$imageHeight	= imagesy($image);
+		$spritesX		= $imageWidth / $width;
+		$spritesY		= $imageHeight / $height;
+		
+		$folderName		= str_replace(".dmi", "", $inFile);
+		$folderName		= preg_replace('/[^A-Za-z0-9 _ .-]/', '', $folderName);
+		$folderName		= "out/".$folderName;
 
 		if (!file_exists("out")) {
 			mkdir("out");
@@ -166,14 +163,14 @@
 
 		$spriteNumber = 0;
 		foreach ($sprites as $i => $spriteData) {
-			$spriteName = $spriteData["state"];
-			$spriteName = preg_replace('/[^A-Za-z0-9 _ .-]/', '', $spriteName);
+			$spriteName	= $spriteData["state"];
+			$spriteName	= preg_replace('/[^A-Za-z0-9 _ .-]/', '', $spriteName);
 			print "  $spriteName\n";
-
-
-			$frames = intval($spriteData["frames"]);
-			$dirs = intval($spriteData["dirs"]);
-			$rewind = intval($spriteData["rewind"]);
+			
+			
+			$frames		= intval($spriteData["frames"]);
+			$dirs		= intval($spriteData["dirs"]);
+			$rewind		= intval($spriteData["rewind"]);
 			if (!$frames) {
 				$frames = 1;
 			}
@@ -188,67 +185,67 @@
 				print "    Dir: $dir (spriteNum $spriteNumber)\n";
 
 				if ($frames == 1) {	
-					$sprite = imagecreatetruecolor($width, $height);
+					$sprite			= imagecreatetruecolor($width, $height);
 					imagesavealpha($sprite, true);
-					$trans_colour = imagecolorallocatealpha($sprite, 0, 0, 0, 127);
+					$trans_colour	= imagecolorallocatealpha($sprite, 0, 0, 0, 127);
 					imagefill($sprite, 0, 0, $trans_colour);
 					
-					$posX = ($spriteNumber + $dir) % $spritesX;
-					$posY = floor(($spriteNumber + $dir) / $spritesX);
+					$posX			= ($spriteNumber + $dir) % $spritesX;
+					$posY			= floor(($spriteNumber + $dir) / $spritesX);
 					
 					imagecopy($sprite, $image, 0, 0, $posX * $width, $posY * $height, $width, $height);
-					$outfile	= "$folderName/$spriteName"."_$dir.png";
+					$outfile		= "$folderName/$spriteName"."_$dir.png";
 					imagepng($sprite, $outfile);
 					print "      $outfile\n";
 
 				}else{
-					$gifFrameList = [];
+					$gifFrameList	= [];
 					for ($frameNum = 0; $frameNum < $frames; $frameNum++) {
-						$sprite = imagecreatetruecolor($width, $height);
+						$sprite			= imagecreatetruecolor($width, $height);
 						imagesavealpha($sprite, true);
-						$trans_colour = imagecolortransparent($sprite, 127<<24);
+						$trans_colour	= imagecolortransparent($sprite, 127<<24);
 						imagefill($sprite, 0, 0, $trans_colour);
 						
-						$posX = ($spriteNumber + ($dirs * $frameNum) + $dir) % $spritesX;
-						$posY = floor(($spriteNumber + ($dirs * $frameNum) + $dir) / $spritesX);
+						$posX			= ($spriteNumber + ($dirs * $frameNum) + $dir) % $spritesX;
+						$posY			= floor(($spriteNumber + ($dirs * $frameNum) + $dir) / $spritesX);
 						imagecopy($sprite, $image, 0, 0, $posX * $width, $posY * $height, $width, $height);
 						if (!file_exists("$folderName/$spriteName"."_$dir")) {
 							mkdir("$folderName/$spriteName"."_$dir");
 						}
-						$outfile	= "$folderName/$spriteName"."_$dir/$frameNum.png";
+						$outfile		= "$folderName/$spriteName"."_$dir/$frameNum.png";
 						imagepng($sprite, $outfile);
 						print "      $outfile\n";
-						$gifFrameList[] = $sprite;
+						$gifFrameList[]	= $sprite;
 					}
 					
-					$delayList = [];
-					$delay = $spriteData["delay"];
-					$delays = explode(",", $delay);
+					$delayList	= [];
+					$delay		= $spriteData["delay"];
+					$delays		= explode(",", $delay);
 					foreach($delays as $i => $dl) {
-						$dl = intval(trim($dl));
-						$delayList[] = $dl * 10;
+						$dl				= intval(trim($dl));
+						$delayList[]	= $dl * 10;
 					}
 					
 					if ($rewind) {
 						//print "REWIND";
 						for ($i = count($gifFrameList) - 2; $i > 0; $i--) {
-							$gifFrameList[] = $gifFrameList[$i];
+							$gifFrameList[]	= $gifFrameList[$i];
 						}
 						for ($i = count($delayList) - 2; $i > 0; $i--) {
-							$delayList[] = $delayList[$i];
+							$delayList[]	= $delayList[$i];
 						}
 					}
 					
-					$gc = new GifCreator();
+					$gc			= new GifCreator();
 					$gc->create($gifFrameList, $delayList, 0);
-					$gifBinary = $gc->getGif();
+					$gifBinary	= $gc->getGif();
 					$outfile	= "$folderName/$spriteName"."_$dir.gif";
 					file_put_contents($outfile, $gifBinary);
 					print "        $outfile\n";
 
 				}
 			}
-			$spriteNumber += $frames * $dirs;
+			$spriteNumber	+= $frames * $dirs;
 		}
 		
 
