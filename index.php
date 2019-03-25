@@ -2,6 +2,12 @@
 
 	require_once "libs.php";
 
+	$test	= new BYOND\DMI("in/lunar.dmi");
+	die("\n\n");
+
+
+
+
 	$dmiFiles = [];
 	$dir = new DirectoryIterator("in");
 
@@ -16,128 +22,6 @@
 	}
 
 	foreach ($dmiFiles as $i => $inFile) {
-
-		print "$inFile\n";
-
-		$metadata	= PNGMetadataExtractor::getMetadata("in/".$inFile);
-		$dmi		= $metadata["text"]["ImageDescription"]["x-default"];
-		$metadata	= explode("\n", trim($dmi));
-		
-		$width		= 32;
-		$height		= 32;
-		$version	= 0;
-		
-		$state		= "";
-		$dirs		= "";
-		$frames		= "";
-		$delay		= "";
-		$loop		= "";
-		$hotspot	= "";
-		$rewind		= "";
-		$movement	= "";
-		$first		= true;
-		
-		$sprites	= [];
-
-		foreach ($metadata as $i => $line) {
-			$line		= trim($line);
-			$dataPair	= explode("=", $line);
-			
-			$key		= trim($dataPair[0]);
-			$value		= trim($dataPair[1] ?? null);
-			print "$key => $value\n";
-			
-			if (count($dataPair) != 2) {
-				continue;
-			}
-
-			if ($key == "version") {
-				$version	= intval($value);
-				continue;
-			}
-			if ($key == "width") {
-				$width		= intval($value);
-				continue;
-			}
-			if ($key == "height") {
-				$height		= intval($value);
-				continue;
-			}
-			if ($key == "state") {
-				if ($first) {
-					$first	= false;
-				}else{
-					$sprites[] = Array(
-						"state"		=> $state, 
-						"dirs"		=> $dirs, 
-						"frames"	=> $frames, 
-						"delay"		=> $delay, 
-						"loop"		=> $loop, 
-						"hotspot"	=> $hotspot, 
-						"movement"	=> $movement, 
-						"rewind"	=> $rewind
-					);
-				}
-				$state		= "";
-				$dirs		= "";
-				$frames		= "";
-				$delay		= "";
-				$loop		= "";
-				$rewind		= "";
-				$hotspot	= "";
-				$movement	= "";
-				if (startsWith($value, '"')) {
-					$value = substr($value, 1);
-				}
-				if (endsWith($value, '"')) {
-					$value = substr($value, 0, strlen($value) -1);
-				}
-				$state = $value;
-				continue;
-			}
-			if ($key == "dirs") {
-				$dirs = $value;
-				continue;
-			}
-			if ($key == "frames") {
-				$frames = $value;
-				continue;
-			}
-			if ($key == "loop") {
-				$loop = $value;
-				continue;
-			}
-			if ($key == "delay") {
-				$delay = $value;
-				continue;
-			}
-			if ($key == "hotspot") {
-				$hotspot = $value;
-				continue;
-			}
-			if ($key == "movement") {
-				$movement = $value;
-				continue;
-			}
-			if ($key == "rewind") {
-				$rewind = $value;
-				continue;
-			}
-			print "UNKNOWN KEY/VALUE PAIR '$key' = '$value' !!!\n";
-		}
-
-		if (!$first) {
-			$sprites[] = Array(
-				"state"		=> $state, 
-				"dirs"		=> $dirs, 
-				"frames"	=> $frames, 
-				"delay"		=> $delay, 
-				"loop"		=> $loop, 
-				"hotspot"	=> $hotspot, 
-				"movement"	=> $movement, 
-				"rewind"	=> $rewind
-			);
-		}
 
 		//Load image
 		$image			= imagecreatefrompng("in/".$inFile);
