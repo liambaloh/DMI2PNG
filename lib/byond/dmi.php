@@ -143,13 +143,9 @@
 						$outNameD	= "-dir$dir";
 					}
 
-/*
-  New state: breakairlock1
-    dirs -> 1
-    frames -> 8
-    delay -> 2,2,8,6,6,2,2,1
-    loop -> 1
-*/
+					// TODO fix: each animation state is handled first, *then* the direction
+					// rather than d1[f1,f2,f3,f4] d2[...] it seems to be f1[d1,d2,d3,d4] f2[...]
+					// shit
 
 					$frameImages	= [];
 					$APNG			= null;
