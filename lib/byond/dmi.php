@@ -136,17 +136,18 @@
 					}
 				}
 
+				// TODO fix: each animation state is handled first, *then* the direction
+				// rather than d1[f1,f2,f3,f4] d2[...] it seems to be f1[d1,d2,d3,d4] f2[...]
+				// shit
+
+				$baseSpriteNumber	= $spriteNumber;
+
 				for ($dir = 1; $dir <= $state->data['dirs']; $dir++) {
 					$outNameD	= "";
 					$outNameF	= "";
 					if ($state->data['dirs'] > 1) {
 						$outNameD	= "-dir$dir";
 					}
-
-					// TODO fix: each animation state is handled first, *then* the direction
-					// rather than d1[f1,f2,f3,f4] d2[...] it seems to be f1[d1,d2,d3,d4] f2[...]
-					// shit
-
 					$frameImages	= [];
 					$APNG			= null;
 					if ($state->data['frames'] > 1) {
@@ -155,6 +156,8 @@
 					}
 
 					for ($frame = 1; $frame <= $state->data['frames']; $frame++) {
+
+						$spriteNumber	= $baseSpriteNumber + ($frame - 1) * $state->data['dirs'] + ($dir - 1);
 
 						if ($state->data['frames'] > 1) {
 							$outNameF	= "-fr$frame";
@@ -173,7 +176,6 @@
 
 						$frameImages[]	= $sprite;
 
-						$spriteNumber++;
 
 					}
 
@@ -186,8 +188,11 @@
 					foreach ($frameImages as $delete) {
 						imagedestroy($delete);
 					}
+
+
 				}
 
+				$spriteNumber	= $baseSpriteNumber + $state->data['dirs'] * $state->data['frames'];
 
 			}
 
