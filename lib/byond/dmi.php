@@ -81,7 +81,8 @@
 			$lines	= explode("\n", $data);
 
 			foreach ($lines as $line) {
-	
+				if (!trim($line)) continue;
+
 				list($key, $value)	= array_map("trim", explode("=", $line, 2));
 
 				if ($key === "width" || $key === "height") {
@@ -113,7 +114,7 @@
 			$posY	= (floor($n / $this->dimensions['sx'])) * $this->height;
 
 			$ret	= $this->getEmptyImage();
-			imagecopymerge($ret, $this->image, 0, 0, $posX, $posY, $this->width, $this->height, 100);
+			imagecopy($ret, $this->image, 0, 0, $posX, $posY, $this->width, $this->height);
 			return $ret;
 		}
 
@@ -141,6 +142,7 @@
 				// shit
 
 				$baseSpriteNumber	= $spriteNumber;
+				$baseFilenames		= [];
 
 				for ($dir = 1; $dir <= $state->data['dirs']; $dir++) {
 					$outNameD	= "";
@@ -159,10 +161,12 @@
 
 						$spriteNumber	= $baseSpriteNumber + ($frame - 1) * $state->data['dirs'] + ($dir - 1);
 
+						$outputFile	= "$outDir$name$outNameD$outNameF.png";
 						if ($state->data['frames'] > 1) {
 							$outNameF	= "-fr$frame";
+							$outputFile	= "$outDir$name$outNameD$outNameF.png";
+							$baseFilenames[]	= $outputFile;
 						}
-						$outputFile	= "$outDir$name$outNameD$outNameF.png";
 
 						printf("    %04d ", $spriteNumber);
 						print "$outputFile\n";
@@ -193,6 +197,20 @@
 				}
 
 				$spriteNumber	= $baseSpriteNumber + $state->data['dirs'] * $state->data['frames'];
+
+				// Clean up in-progress frames
+				foreach ($baseFilenames as $filename) {
+					print "    CLEANUP: Del $filename\n";
+					unlink($filename);
+				}
+
+				if ($state->data['dirs'] == 1 && $state->data['frames'] > 1) {
+					// Copy the single animation back to the main directory and delete the temp one
+					print "    CLEANUP: Move single $outputFile to $baseOutDir$name.png\n";
+					rename($outputFile, "$baseOutDir$name.png");
+					rmdir($outDir);
+
+				}
 
 			}
 
