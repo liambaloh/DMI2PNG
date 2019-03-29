@@ -2,251 +2,70 @@
 
 	require_once "libs.php";
 
-	$dmiFiles = [];
-	$dir = new DirectoryIterator("in");
+	$path	= $argv[1] ?? null;
 
-	foreach ($dir as $fileinfo) {
-		if (!$fileinfo->isDot()) {
-			$fileName	= $fileinfo->getFilename();
-			$ext		= pathinfo($fileName, PATHINFO_EXTENSION);
-			if ($ext == "dmi") {
-				$dmiFiles[]	= $fileName;
-			}
-		}
+	if (!$path) {
+		die("Usage: $argv[0] [path]\n");
+	} elseif (!file_exists($path)) {
+		die("Path not found: $path\n");
 	}
 
-	foreach ($dmiFiles as $i => $inFile) {
+	if (is_dir($path)) {
+		print "Recursively converting starting at $path ...\n";
+		recursiveConvert($path);
+		print "\n----------------------\nDone.\n";
 
-		print "$inFile\n";
+	} elseif (is_file($path)) {
+		if (substr($path, -4) !== ".dmi") {
+			die("Not DMI file? $path\n");
+		}
+		echo "Converting $path ...\n";
+		$test	= new BYOND\DMI($path);
+		$test->loadImage();
+		$test->convertToPNGs();
+		print "\n----------------------\nDone.\n";
+	}
 
-		$metadata	= PNGMetadataExtractor::getMetadata("in/".$inFile);
-		$dmi		= $metadata["text"]["ImageDescription"]["x-default"];
-		$metadata	= explode("\n", trim($dmi));
-		
-		$width		= 32;
-		$height		= 32;
-		$version	= 0;
-		
-		$state		= "";
-		$dirs		= "";
-		$frames		= "";
-		$delay		= "";
-		$loop		= "";
-		$hotspot	= "";
-		$rewind		= "";
-		$movement	= "";
-		$first		= true;
-		
-		$sprites	= [];
+	die();
 
-		foreach ($metadata as $i => $line) {
-			$line		= trim($line);
-			$dataPair	= explode("=", $line);
-			
-			$key		= trim($dataPair[0]);
-			$value		= trim($dataPair[1] ?? null);
-			print "$key => $value\n";
-			
-			if (count($dataPair) != 2) {
-				continue;
-			}
+	$test	= new BYOND\DMI("in/lunar.dmi");
+	$test->loadImage();
+	$test->convertToPNGs();
+	die("\n\n");
 
-			if ($key == "version") {
-				$version	= intval($value);
-				continue;
-			}
-			if ($key == "width") {
-				$width		= intval($value);
-				continue;
-			}
-			if ($key == "height") {
-				$height		= intval($value);
-				continue;
-			}
-			if ($key == "state") {
-				if ($first) {
-					$first	= false;
-				}else{
-					$sprites[] = Array(
-						"state"		=> $state, 
-						"dirs"		=> $dirs, 
-						"frames"	=> $frames, 
-						"delay"		=> $delay, 
-						"loop"		=> $loop, 
-						"hotspot"	=> $hotspot, 
-						"movement"	=> $movement, 
-						"rewind"	=> $rewind
-					);
-				}
-				$state		= "";
-				$dirs		= "";
-				$frames		= "";
-				$delay		= "";
-				$loop		= "";
-				$rewind		= "";
-				$hotspot	= "";
-				$movement	= "";
-				if (startsWith($value, '"')) {
-					$value = substr($value, 1);
-				}
-				if (endsWith($value, '"')) {
-					$value = substr($value, 0, strlen($value) -1);
-				}
-				$state = $value;
-				continue;
-			}
-			if ($key == "dirs") {
-				$dirs = $value;
-				continue;
-			}
-			if ($key == "frames") {
-				$frames = $value;
-				continue;
-			}
-			if ($key == "loop") {
-				$loop = $value;
-				continue;
-			}
-			if ($key == "delay") {
-				$delay = $value;
-				continue;
-			}
-			if ($key == "hotspot") {
-				$hotspot = $value;
-				continue;
-			}
-			if ($key == "movement") {
-				$movement = $value;
-				continue;
-			}
-			if ($key == "rewind") {
-				$rewind = $value;
-				continue;
-			}
-			print "UNKNOWN KEY/VALUE PAIR '$key' = '$value' !!!\n";
+
+	function recursiveConvert($path) {
+		if (is_file($path)) {
+			convertDMI($path);
+			return;
 		}
 
-		if (!$first) {
-			$sprites[] = Array(
-				"state"		=> $state, 
-				"dirs"		=> $dirs, 
-				"frames"	=> $frames, 
-				"delay"		=> $delay, 
-				"loop"		=> $loop, 
-				"hotspot"	=> $hotspot, 
-				"movement"	=> $movement, 
-				"rewind"	=> $rewind
-			);
+		if (substr($path, -1) !== "/") {
+			$path	.= "/";
 		}
 
-		//Load image
-		$image			= imagecreatefrompng("in/".$inFile);
-		imagesavealpha($image, true);
-		$trans_colour	= imagecolorallocatealpha($image, 0, 0, 0, 127);
-		imagefill($image, 0, 0, $trans_colour);
-		$imageWidth		= imagesx($image);
-		$imageHeight	= imagesy($image);
-		$spritesX		= $imageWidth / $width;
-		$spritesY		= $imageHeight / $height;
-		
-		$folderName		= str_replace(".dmi", "", $inFile);
-		$folderName		= preg_replace('/[^A-Za-z0-9 _ .-]/', '', $folderName);
-		$folderName		= "out/".$folderName;
+		$files	= scandir($path);
 
-		if (!file_exists("out")) {
-			mkdir("out");
-		}
-		if (!file_exists("$folderName")) {
-			mkdir("$folderName");
+		foreach ($files as $file) {
+			if ($file === "." || $file === "..") continue;
+			if (substr($file, -4) === ".dmi") {
+				convertDMI($path . $file);
+			} elseif (is_dir($path . $file)) {
+				recursiveConvert($path . $file);
+			}
 		}
 
+	}
 
-		$spriteNumber = 0;
-		foreach ($sprites as $i => $spriteData) {
-			$spriteName	= $spriteData["state"];
-			$spriteName	= preg_replace('/[^A-Za-z0-9 _ .-]/', '', $spriteName);
-			print "  $spriteName\n";
-			
-			
-			$frames		= intval($spriteData["frames"]);
-			$dirs		= intval($spriteData["dirs"]);
-			$rewind		= intval($spriteData["rewind"]);
-			if (!$frames) {
-				$frames = 1;
-			}
-			if (!$dirs) {
-				$dirs = 1;
-			}
-			if (!$rewind) {
-				$rewind = 0;
-			}
-			
-			for ($dir = 0; $dir < $dirs; $dir++) {
-				print "    Dir: $dir (spriteNum $spriteNumber)\n";
 
-				if ($frames == 1) {	
-					$sprite			= imagecreatetruecolor($width, $height);
-					imagesavealpha($sprite, true);
-					$trans_colour	= imagecolorallocatealpha($sprite, 0, 0, 0, 127);
-					imagefill($sprite, 0, 0, $trans_colour);
-					
-					$posX			= ($spriteNumber + $dir) % $spritesX;
-					$posY			= floor(($spriteNumber + $dir) / $spritesX);
-					
-					imagecopy($sprite, $image, 0, 0, $posX * $width, $posY * $height, $width, $height);
-					$outfile		= "$folderName/$spriteName"."_$dir.png";
-					imagepng($sprite, $outfile);
-					print "      $outfile\n";
-
-				}else{
-					$gifFrameList	= [];
-					for ($frameNum = 0; $frameNum < $frames; $frameNum++) {
-						$sprite			= imagecreatetruecolor($width, $height);
-						imagesavealpha($sprite, true);
-						$trans_colour	= imagecolortransparent($sprite, 127<<24);
-						imagefill($sprite, 0, 0, $trans_colour);
-						
-						$posX			= ($spriteNumber + ($dirs * $frameNum) + $dir) % $spritesX;
-						$posY			= floor(($spriteNumber + ($dirs * $frameNum) + $dir) / $spritesX);
-						imagecopy($sprite, $image, 0, 0, $posX * $width, $posY * $height, $width, $height);
-						if (!file_exists("$folderName/$spriteName"."_$dir")) {
-							mkdir("$folderName/$spriteName"."_$dir");
-						}
-						$outfile		= "$folderName/$spriteName"."_$dir/$frameNum.png";
-						imagepng($sprite, $outfile);
-						print "      $outfile\n";
-						$gifFrameList[]	= $sprite;
-					}
-					
-					$delayList	= [];
-					$delay		= $spriteData["delay"];
-					$delays		= explode(",", $delay);
-					foreach($delays as $i => $dl) {
-						$dl				= intval(trim($dl));
-						$delayList[]	= $dl * 10;
-					}
-					
-					if ($rewind) {
-						//print "REWIND";
-						for ($i = count($gifFrameList) - 2; $i > 0; $i--) {
-							$gifFrameList[]	= $gifFrameList[$i];
-						}
-						for ($i = count($delayList) - 2; $i > 0; $i--) {
-							$delayList[]	= $delayList[$i];
-						}
-					}
-					
-					$gc			= new GifCreator();
-					$gc->create($gifFrameList, $delayList, 0);
-					$gifBinary	= $gc->getGif();
-					$outfile	= "$folderName/$spriteName"."_$dir.gif";
-					file_put_contents($outfile, $gifBinary);
-					print "        $outfile\n";
-
-				}
+	function convertDMI($path) {
+		if (is_file($path)) {
+			if (substr($path, -4) !== ".dmi") {
+				die("Not DMI file? $path\n");
 			}
-			$spriteNumber	+= $frames * $dirs;
+			echo "Converting $path ...\n";
+			$test	= new BYOND\DMI($path);
+			$test->loadImage();
+			$test->convertToPNGs();
 		}
-		
-
 	}
