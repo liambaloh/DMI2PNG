@@ -2,7 +2,7 @@
 
 	require_once "libs.php";
 
-	$path	= $argv[1] ?? null;
+	$path = isset($argv[1]) ? $argv[1] : null;
 
 	if (!$path) {
 		die("Usage: $argv[0] [path]\n");
