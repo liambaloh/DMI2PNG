@@ -9,6 +9,10 @@ Non-animated sprites are saved as PNG images,
 
 Animated sprites are saved as animated GIF images as well as PNG images for each frame.
 
+## Command Line variant
+
+A command line variant of this tool also exists, available in a fork: [Xkeeper0/DMI2PNG](https://github.com/Xkeeper0/DMI2PNG). It's still written in PHP, but can be used in CMD or Terminal: `php index.php items.dmi`. The rest of the instructions in this readme only relate to the web-server version.
+
 ## Instructions
 
 This is made in PHP - arguably not the best language for this purpose. But hey, that's what I made it in. What this means is you'll need a web server to run it. (or a PHP interpreter - guide not provided here) 
@@ -40,7 +44,7 @@ Bug: The DMI file names and icon state names are sanitized before being saved. T
 Please note: files with the same name will overwrite existing ones. so if you run multiple versions of "overlays.dmi" through the script, icon states will overwrite previous ones. To get around this either clear the "out" folder every time you change the content of the "in" folder or ensure all DMI files have unique names.
 
 ## Credits
-- Repository of this software: https://github.com/balohmatevz/DMI2PNG
+- Repository of this software: https://github.com/liambaloh/DMI2PNG
 - PNGMetadataExtractor class, part of MediaWiki software (https://doc.wikimedia.org/mediawiki-core/master/php/PNGMetadataExtractor_8php_source.html)
 - GifCreator, developed by Github user Sybio (https://github.com/Sybio/GifCreator)
 
