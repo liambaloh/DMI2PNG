@@ -1,0 +1,1 @@
+put your dmi files into this folder, then run the script in your browser. The processed dmi files will be moved into the automatically created "done" folder and the png/gif files will be in the automatically created "out" folder.
