@@ -46,8 +46,9 @@ Please note: files with the same name will overwrite existing ones. so if you ru
 ## Credits
 - Repository of this software: https://github.com/liambaloh/DMI2PNG
 - PNGMetadataExtractor class, part of MediaWiki software (https://doc.wikimedia.org/mediawiki-core/master/php/PNGMetadataExtractor_8php_source.html)
-- GifCreator, developed by Github user Sybio (https://github.com/Sybio/GifCreator)
-
+- GifCreator:
+  - developed by Github user Sybio (https://github.com/Sybio/GifCreator)
+  - enhancements by Github user QbilSoftware (https://github.com/QbilSoftware/GifCreator)
 ## License
 
 Shared under GPL, because it uses a class from MediaWiki software.
